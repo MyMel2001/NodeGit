@@ -12,25 +12,37 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
+    if (!req.session.user) return res.status(401).send('Unauthorized');
     const { githubToken, githubUsername } = req.body;
     const owner = req.session.user.username;
 
     if (!githubToken && !githubUsername) {
-        return res.render('import', { error: 'GitHub Token or Username is required', success: null });
+        return res.status(400).json({ error: 'GitHub Token or Username is required' });
     }
+
+    // Set headers for streaming
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    const sendUpdate = (data) => {
+        res.write(JSON.stringify(data) + '\n');
+    };
+
+    // Heartbeat interval to keep connection alive
+    const heartbeat = setInterval(() => {
+        res.write(': heartbeat\n');
+    }, 15000);
 
     try {
         let githubRepos = [];
+        sendUpdate({ status: 'fetching', message: 'Fetching repository list from GitHub...' });
         
         if (githubToken) {
-            // Fetch user info from GitHub to verify token
             const userResp = await fetch('https://api.github.com/user', {
                 headers: { 'Authorization': `token ${githubToken}` }
             });
             if (!userResp.ok) throw new Error('Invalid GitHub Token');
             
-            // Fetch all repos accessible by this token (paginated)
             let page = 1;
             while (true) {
                 const reposResp = await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}`, {
@@ -42,7 +54,6 @@ router.post('/', async (req, res) => {
                 page++;
             }
         } else {
-            // Fetch public repos for a specific user/org (paginated)
             let page = 1;
             while (true) {
                 const reposResp = await fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100&page=${page}`);
@@ -57,25 +68,28 @@ router.post('/', async (req, res) => {
             }
         }
 
+        sendUpdate({ status: 'starting', total: githubRepos.length, message: `Found ${githubRepos.length} repositories. Starting import...` });
+
         let importedCount = 0;
-        for (const repo of githubRepos) {
-            // Skip private repos if we don't have a token to clone them
+        for (let i = 0; i < githubRepos.length; i++) {
+            const repo = githubRepos[i];
             if (repo.private && !githubToken) continue;
 
             const repoName = repo.name;
             let cloneUrl = repo.clone_url;
-            
-            // If we have a token, inject it into the clone URL for auth
             if (githubToken) {
                 cloneUrl = cloneUrl.replace('https://', `https://${githubToken}@`);
             }
             
             const repoPath = path.join(__dirname, '..', 'repos', owner, repoName + '.git');
-            if (fs.existsSync(repoPath)) continue; // skip existing
+            if (fs.existsSync(repoPath)) {
+                sendUpdate({ status: 'skipping', repo: repoName, message: `Skipping ${repoName} (already exists)` });
+                continue;
+            }
+
+            sendUpdate({ status: 'cloning', repo: repoName, current: i + 1, total: githubRepos.length, message: `Cloning ${repoName}...` });
 
             fs.mkdirSync(repoPath, { recursive: true });
-            
-            // We do a mirror clone to get a bare repo with all branches
             const git = spawn('git', ['clone', '--mirror', cloneUrl, repoPath]);
             
             await new Promise((resolve) => {
@@ -94,16 +108,19 @@ router.post('/', async (req, res) => {
                 });
             });
 
-            // Be kind to GitHub and our server: 3-5 second delay between imports
-            if (importedCount < githubRepos.length) {
+            if (i < githubRepos.length - 1) {
                 await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 2000) + 3000));
             }
         }
 
-        res.render('import', { error: null, success: `Successfully imported ${importedCount} repositories.` });
+        clearInterval(heartbeat);
+        sendUpdate({ status: 'done', count: importedCount, message: `Successfully imported ${importedCount} repositories.` });
+        res.end();
 
     } catch (err) {
-        res.render('import', { error: err.message, success: null });
+        clearInterval(heartbeat);
+        sendUpdate({ status: 'error', error: err.message });
+        res.end();
     }
 });
 

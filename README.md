@@ -15,7 +15,7 @@ A professional-grade, self-hosted Git frontend built with Node.js. NodeGit provi
 - **CI/CD**: Integrated runner for automated job execution (Docker-ready).
 - **Themeable UI**: Beautiful, GitHub-esque light mode and a custom Lime-on-Black dark mode.
 - **Release Management**: Create and view repository tags and releases.
-- **GitHub Import**: Seamlessly import your entire repository collection from GitHub using either a Personal Access Token (for private repos) or just a username/organization name (for public repos). Full pagination support ensures that even accounts with hundreds of repositories are imported completely. Built-in rate-limiting ensures we are kind to GitHub's APIs, and tokens are securely used for private repository authentication during the import process.
+- **GitHub Import**: Seamlessly import your entire repository collection from GitHub using either a Personal Access Token (for private repos) or just a username/organization name (for public repos). Features real-time progress reporting via streaming JSON and built-in heartbeats to prevent Cloudflare timeouts. Full pagination support ensures that even accounts with hundreds of repositories are imported completely. Built-in rate-limiting ensures we are kind to GitHub's APIs, and tokens are securely used for private repository authentication during the import process.
 
 ## 🛠️ Tech Stack
 

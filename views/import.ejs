@@ -43,19 +43,108 @@
     </div>
 
     <script>
-        document.getElementById('import-form').addEventListener('submit', function() {
+        document.getElementById('import-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
             const btn = document.getElementById('import-btn');
+            const form = e.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Importing...';
             
-            // Add a status message below
-            const status = document.createElement('p');
-            status.className = 'text-muted';
-            status.style.marginTop = '16px';
-            status.style.fontSize = '0.9rem';
-            status.innerText = 'Fetching your repositories and cloning them one by one. This process may take a few minutes depending on the number and size of your repositories.';
-            btn.parentNode.appendChild(status);
+            // Create or clear status container
+            let statusContainer = document.getElementById('import-status');
+            if (!statusContainer) {
+                statusContainer = document.createElement('div');
+                statusContainer.id = 'import-status';
+                statusContainer.style.marginTop = '24px';
+                form.parentNode.appendChild(statusContainer);
+            }
+            statusContainer.innerHTML = '<p class="text-muted">Initializing connection...</p>';
+
+            try {
+                const response = await fetch('/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.trim() || line.startsWith(':')) continue;
+                        
+                        try {
+                            const update = JSON.parse(line);
+                            renderUpdate(update, statusContainer);
+                        } catch (e) {
+                            console.error('Error parsing update:', e, line);
+                        }
+                    }
+                }
+            } catch (err) {
+                statusContainer.innerHTML = `<div style="background-color: var(--danger-color); color: white; padding: 10px; border-radius: 6px;">Error: ${err.message}</div>`;
+                btn.disabled = false;
+                btn.innerHTML = 'Import Repositories';
+            }
         });
+
+        function renderUpdate(update, container) {
+            const btn = document.getElementById('import-btn');
+            
+            if (update.status === 'fetching' || update.status === 'starting' || update.status === 'cloning' || update.status === 'skipping') {
+                let progressHtml = '';
+                if (update.total) {
+                    const percent = Math.round(((update.current || 0) / update.total) * 100);
+                    progressHtml = `
+                        <div style="width: 100%; background-color: var(--border-color); height: 8px; border-radius: 4px; margin: 12px 0; overflow: hidden;">
+                            <div style="width: ${percent}%; background-color: var(--success-color); height: 100%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <p style="font-size: 0.85rem; margin-bottom: 8px;">Progress: ${update.current || 0} / ${update.total} repositories</p>
+                    `;
+                }
+                
+                container.innerHTML = `
+                    <div class="card" style="background-color: var(--bg-color); border-color: var(--border-color); padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span class="spinner" style="border-top-color: var(--primary-color);"></span>
+                            <strong>${update.message}</strong>
+                        </div>
+                        ${progressHtml}
+                    </div>
+                `;
+            } else if (update.status === 'done') {
+                container.innerHTML = `
+                    <div style="background-color: var(--success-color); color: white; padding: 10px; border-radius: 6px; margin-bottom: 16px;">
+                        ${update.message}
+                    </div>
+                    <p style="text-align: center; margin-top: 16px;">
+                        <a href="/" class="btn">Go to Dashboard</a>
+                    </p>
+                `;
+                btn.innerHTML = 'Import Complete';
+            } else if (update.status === 'error') {
+                container.innerHTML = `
+                    <div style="background-color: var(--danger-color); color: white; padding: 10px; border-radius: 6px;">
+                        Error: ${update.error}
+                    </div>
+                `;
+                btn.disabled = false;
+                btn.innerHTML = 'Retry Import';
+            }
+        }
     </script>
 
     <div class="card" style="margin-top: 24px; background-color: var(--bg-color); border-style: dashed;">
