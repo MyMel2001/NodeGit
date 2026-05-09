@@ -1,0 +1,47 @@
+<%- include('header') %>
+
+<div style="max-width: 600px; margin: 0 auto;">
+    <h2>Create a new repository</h2>
+    <p class="text-muted" style="margin-bottom: 24px;">
+        A repository contains all project files, including the revision history.
+    </p>
+
+    <div class="card">
+        <form action="/new" method="POST">
+            <div class="form-group">
+                <label for="name">Repository name</label>
+                <input type="text" id="name" name="name" class="form-control" placeholder="my-awesome-project" required autofocus>
+                <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
+                    Great repository names are short and memorable.
+                </p>
+            </div>
+
+            <div class="form-group" style="margin-top: 24px;">
+                <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+                    <input type="radio" id="public" name="isPrivate" value="off" checked style="margin-top: 4px;">
+                    <div>
+                        <label for="public" style="margin-bottom: 0;">Public</label>
+                        <p class="text-muted" style="font-size: 0.85rem; font-weight: 400;">
+                            Anyone on the internet can see this repository. You choose who can commit.
+                        </p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <input type="radio" id="private" name="isPrivate" value="on" style="margin-top: 4px;">
+                    <div>
+                        <label for="private" style="margin-bottom: 0;">Private</label>
+                        <p class="text-muted" style="font-size: 0.85rem; font-weight: 400;">
+                            You choose who can see and commit to this repository.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+            <button type="submit" class="btn btn-primary">Create repository</button>
+        </form>
+    </div>
+</div>
+
+<%- include('footer') %>

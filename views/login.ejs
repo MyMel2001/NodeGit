@@ -1,0 +1,30 @@
+<%- include('header') %>
+
+<div style="max-width: 400px; margin: 0 auto;">
+    <div class="card">
+        <h2 style="text-align: center;">Sign In</h2>
+        
+        <% if (error) { %>
+            <div style="background-color: var(--danger-color); color: white; padding: 10px; border-radius: 6px; margin-bottom: 16px;">
+                <%= error %>
+            </div>
+        <% } %>
+
+        <form action="/login" method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-control" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Sign In</button>
+        </form>
+    </div>
+    <p style="text-align: center;" class="text-muted">
+        New here? <a href="/register">Create an account</a>.
+    </p>
+</div>
+
+<%- include('footer') %>

@@ -1,0 +1,41 @@
+<%- include('header') %>
+
+<div style="max-width: 800px; margin: 0 auto;">
+    <h2>Compare changes</h2>
+    <p class="text-muted">Choose two branches to see what's changed or to start a new pull request.</p>
+
+    <div class="card" style="margin-top: 24px;">
+        <form action="/<%= owner %>/<%= repo %>/pull/new" method="POST">
+            <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 24px;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Base</label>
+                    <select name="base" class="form-control">
+                        <% branches.forEach(b => { %>
+                            <option value="<%= b %>" <%= b === 'main' || b === 'master' ? 'selected' : '' %>><%= b %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div style="padding-top: 24px;">←</div>
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Head</label>
+                    <select name="head" class="form-control">
+                        <% branches.forEach(b => { %>
+                            <option value="<%= b %>"><%= b %></option>
+                        <% }); %>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" class="form-control" placeholder="Add amazing feature" required autofocus>
+            </div>
+
+            <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+            <button type="submit" class="btn btn-primary">Create Pull Request</button>
+        </form>
+    </div>
+</div>
+
+<%- include('footer') %>

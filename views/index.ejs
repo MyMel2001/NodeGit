@@ -1,0 +1,33 @@
+<%- include('header') %>
+
+<div class="card" style="text-align: center; padding: 64px 32px;">
+    <h1>Welcome to NodeGit</h1>
+    <p class="text-muted" style="font-size: 1.2rem; margin-bottom: 32px;">
+        A fast, sleek, and secure Git frontend built with NodeJS.
+    </p>
+    <div style="display: flex; justify-content: center; gap: 16px;">
+        <a href="/register" class="btn btn-primary" style="padding: 12px 24px; font-size: 1rem;">Get Started</a>
+        <a href="/login" class="btn" style="padding: 12px 24px; font-size: 1rem;">Sign In</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 48px;">
+    <div class="card">
+        <h3>Secure by Design</h3>
+        <p>Built-in secret scanning prevents you from pushing credentials and API keys accidentally.</p>
+    </div>
+    <div class="card">
+        <h3>CI/CD Integration</h3>
+        <p>Compatible with GitHub Actions workflows. Run your builds and tests automatically on every push.</p>
+    </div>
+    <div class="card">
+        <h3>GitHub Importer</h3>
+        <p>Easily clone your public repositories from GitHub directly into your private hosting.</p>
+    </div>
+    <div class="card">
+        <h3>Customizable Themes</h3>
+        <p>Switch between a clean Light mode and a high-contrast Lime-on-Black dark mode.</p>
+    </div>
+</div>
+
+<%- include('footer') %>

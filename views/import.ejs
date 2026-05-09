@@ -1,0 +1,48 @@
+<%- include('header') %>
+
+<div style="max-width: 600px; margin: 0 auto;">
+    <h2>Import repositories from GitHub</h2>
+    <p class="text-muted" style="margin-bottom: 24px;">
+        Connect your GitHub account to clone your public repositories into NodeGit.
+    </p>
+
+    <% if (error) { %>
+        <div style="background-color: var(--danger-color); color: white; padding: 10px; border-radius: 6px; margin-bottom: 16px;">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <% if (success) { %>
+        <div style="background-color: var(--success-color); color: white; padding: 10px; border-radius: 6px; margin-bottom: 16px;">
+            <%= success %>
+        </div>
+    <% } %>
+
+    <div class="card">
+        <form action="/import" method="POST">
+            <div class="form-group">
+                <label for="githubToken">GitHub Personal Access Token</label>
+                <input type="password" id="githubToken" name="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" required autofocus>
+                <p class="text-muted" style="font-size: 0.85rem; margin-top: 8px;">
+                    We need a token with <code>repo</code> or <code>public_repo</code> scopes to list and clone your repositories.
+                </p>
+            </div>
+
+            <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+            <button type="submit" class="btn btn-primary">Import Repositories</button>
+        </form>
+    </div>
+
+    <div class="card" style="margin-top: 24px; background-color: var(--bg-color); border-style: dashed;">
+        <h3 style="font-size: 1rem; margin-bottom: 8px;">How it works</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">
+            1. Provide your GitHub Personal Access Token.<br>
+            2. We fetch a list of your public repositories.<br>
+            3. We perform a <code>git clone --mirror</code> for each repository into your NodeGit account.<br>
+            4. Your code history and branches are preserved.
+        </p>
+    </div>
+</div>
+
+<%- include('footer') %>

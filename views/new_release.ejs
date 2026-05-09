@@ -1,0 +1,35 @@
+<%- include('header') %>
+
+<div style="max-width: 800px; margin: 0 auto;">
+    <h2>Draft a new release</h2>
+    <p class="text-muted">Releases are based on Git tags. We recommend using semantic versioning.</p>
+
+    <div class="card" style="margin-top: 24px;">
+        <form action="/<%= owner %>/<%= repo %>/releases/new" method="POST">
+            <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                <div style="flex: 1;">
+                    <label for="tag" style="display: block; margin-bottom: 8px; font-weight: 600;">Tag version</label>
+                    <input type="text" id="tag" name="tag" class="form-control" placeholder="v1.0.0" required autofocus>
+                </div>
+                <div style="flex: 2;">
+                    <label for="title" style="display: block; margin-bottom: 8px; font-weight: 600;">Release title</label>
+                    <input type="text" id="title" name="title" class="form-control" placeholder="Initial Release" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="body">Description</label>
+                <textarea id="body" name="body" class="form-control" rows="10" placeholder="Describe this release..." required></textarea>
+            </div>
+
+            <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+            <div style="display: flex; gap: 12px;">
+                <button type="submit" class="btn btn-primary">Publish release</button>
+                <a href="/<%= owner %>/<%= repo %>/releases" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%- include('footer') %>

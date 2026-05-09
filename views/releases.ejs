@@ -1,0 +1,48 @@
+<%- include('header') %>
+
+<div class="flex-between" style="align-items: flex-start; margin-bottom: 16px;">
+    <div>
+        <h2 style="margin-bottom: 4px;">
+            <a href="/<%= owner %>"><%= owner %></a> / 
+            <a href="/<%= owner %>/<%= repo %>" style="font-weight: 700;"><%= repo %></a>
+        </h2>
+    </div>
+</div>
+
+<div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); display: flex; gap: 24px;">
+    <a href="/<%= owner %>/<%= repo %>" style="padding: 8px 0; color: var(--fg-color);">Code</a>
+    <a href="/<%= owner %>/<%= repo %>/pulls" style="padding: 8px 0; color: var(--fg-color);">Pull Requests</a>
+    <a href="/<%= owner %>/<%= repo %>/releases" style="padding: 8px 0; border-bottom: 2px solid var(--primary-color); font-weight: 600;">Releases</a>
+</div>
+
+<div class="flex-between" style="margin-bottom: 24px;">
+    <h3><%= releases.length %> Releases</h3>
+    <a href="/<%= owner %>/<%= repo %>/releases/new" class="btn btn-primary">Draft a new release</a>
+</div>
+
+<% if (releases.length === 0) { %>
+    <div class="card" style="text-align: center; padding: 48px;">
+        <p class="text-muted">There aren't any releases yet.</p>
+    </div>
+<% } else { %>
+    <ul class="repo-list">
+        <% releases.forEach(release => { %>
+            <li>
+                <div class="flex-between">
+                    <div>
+                        <span style="font-size: 1.25rem; font-weight: 600;"><%= release.name %></span>
+                        <code style="margin-left: 8px; font-size: 0.9rem; background: var(--bg-color); padding: 2px 6px; border-radius: 4px;"><%= release.tag %></code>
+                        <p class="text-muted" style="margin-top: 8px; font-size: 0.9rem;">
+                            Released on <%= new Date(release.createdAt).toLocaleDateString() %>
+                        </p>
+                        <div style="margin-top: 12px; font-size: 0.95rem;">
+                            <%= release.body %>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        <% }); %>
+    </ul>
+<% } %>
+
+<%- include('footer') %>

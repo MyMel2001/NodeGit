@@ -1,0 +1,72 @@
+<%- include('header') %>
+
+<div class="flex-between" style="align-items: flex-start; margin-bottom: 16px;">
+    <div>
+        <h2 style="margin-bottom: 4px;">
+            <a href="/<%= repo.owner %>"><%= repo.owner %></a> / 
+            <a href="/<%= repo.owner %>/<%= repo.name %>" style="font-weight: 700;"><%= repo.name %></a>
+            <span class="text-muted" style="font-size: 0.9rem; font-weight: 400; border: 1px solid var(--border-color); padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                <%= repo.isPrivate ? 'Private' : 'Public' %>
+            </span>
+        </h2>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button class="btn">Watch</button>
+        <button class="btn">Star</button>
+        <button class="btn">Fork</button>
+    </div>
+</div>
+
+<div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); display: flex; gap: 24px;">
+    <a href="/<%= repo.owner %>/<%= repo.name %>" style="padding: 8px 0; border-bottom: 2px solid var(--primary-color); font-weight: 600;">Code</a>
+    <a href="/<%= repo.owner %>/<%= repo.name %>/pulls" style="padding: 8px 0; color: var(--fg-color);">Pull Requests</a>
+    <a href="/<%= repo.owner %>/<%= repo.name %>/releases" style="padding: 8px 0; color: var(--fg-color);">Releases</a>
+</div>
+
+<div class="card" style="padding: 12px 16px; margin-bottom: 16px; background-color: var(--bg-color); border-color: var(--border-color);">
+    <code style="font-size: 0.9rem; color: var(--fg-color);">
+        git clone http://localhost:3000/<%= repo.owner %>/<%= repo.name %>.git
+    </code>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div style="background-color: var(--bg-color); padding: 12px 16px; border-bottom: 1px solid var(--border-color);">
+        <h3 style="margin-bottom: 0; font-size: 1rem;">Latest Commits</h3>
+    </div>
+    <div style="padding: 16px;">
+        <% if (commits.length === 0 || commits[0] === 'Empty repository') { %>
+            <p class="text-muted">No commits yet.</p>
+        <% } else { %>
+            <ul style="list-style: none;">
+                <% commits.forEach(commit => { %>
+                    <li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                        <code><%= commit.substring(0, 7) %></code> <%= commit.substring(8) %>
+                    </li>
+                <% }); %>
+            </ul>
+        <% } %>
+    </div>
+</div>
+
+<div class="file-explorer">
+    <div style="background-color: var(--bg-color); padding: 12px 16px; border-bottom: 1px solid var(--border-color);">
+        <h3 style="margin-bottom: 0; font-size: 1rem;">Files</h3>
+    </div>
+    <% if (files.length === 0) { %>
+        <div style="padding: 32px; text-align: center;">
+            <p class="text-muted">This repository is empty.</p>
+            <p class="text-muted" style="font-size: 0.85rem; margin-top: 8px;">
+                Push some code to get started!
+            </p>
+        </div>
+    <% } else { %>
+        <% files.forEach(file => { %>
+            <div class="file-row">
+                <span style="margin-right: 12px;">📄</span>
+                <a href="#"><%= file %></a>
+            </div>
+        <% }); %>
+    <% } %>
+</div>
+
+<%- include('footer') %>

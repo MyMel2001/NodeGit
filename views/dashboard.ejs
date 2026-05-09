@@ -1,0 +1,35 @@
+<%- include('header') %>
+
+<div class="flex-between" style="margin-bottom: 24px;">
+    <h2>Your Repositories</h2>
+    <a href="/new" class="btn btn-primary">New Repository</a>
+</div>
+
+<% if (repos.length === 0) { %>
+    <div class="card" style="text-align: center; padding: 48px;">
+        <p class="text-muted">You don't have any repositories yet.</p>
+        <a href="/new" class="btn btn-primary" style="margin-top: 16px;">Create your first repository</a>
+    </div>
+<% } else { %>
+    <ul class="repo-list">
+        <% repos.forEach(repo => { %>
+            <li>
+                <div class="flex-between">
+                    <div>
+                        <a href="/<%= repo.value.owner %>/<%= repo.value.name %>" style="font-size: 1.25rem; font-weight: 600;">
+                            <%= repo.value.name %>
+                        </a>
+                        <span class="text-muted" style="margin-left: 8px; font-size: 0.9rem;">
+                            <%= repo.value.isPrivate ? 'Private' : 'Public' %>
+                        </span>
+                        <p class="text-muted" style="margin-top: 4px; font-size: 0.9rem;">
+                            Created on <%= new Date(repo.value.createdAt).toLocaleDateString() %>
+                        </p>
+                    </div>
+                </div>
+            </li>
+        <% }); %>
+    </ul>
+<% } %>
+
+<%- include('footer') %>

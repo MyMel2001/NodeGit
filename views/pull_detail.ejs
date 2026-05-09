@@ -1,0 +1,37 @@
+<%- include('header') %>
+
+<div class="flex-between" style="align-items: flex-start; margin-bottom: 16px;">
+    <div>
+        <h2 style="margin-bottom: 4px;"><%= pr.title %> <span class="text-muted" style="font-weight: 400;">#<%= pr.id.split('_').pop() %></span></h2>
+        <p class="text-muted">
+            <span style="background-color: <%= pr.status === 'merged' ? 'var(--success-color)' : 'var(--primary-color)' %>; color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; margin-right: 8px;">
+                <%= pr.status.toUpperCase() %>
+            </span>
+            <strong><%= pr.author %></strong> wants to merge <%= pr.head %> into <%= pr.base %>
+        </p>
+    </div>
+    <div>
+        <% if (pr.status === 'open') { %>
+            <form action="/<%= pr.owner %>/<%= pr.repo %>/pull/<%= pr.id %>/merge" method="POST">
+                <button type="submit" class="btn btn-primary" style="background-color: var(--success-color);">Merge Pull Request</button>
+            </form>
+        <% } %>
+    </div>
+</div>
+
+<div class="card" style="padding: 0; margin-top: 24px; overflow: hidden;">
+    <div style="background-color: var(--bg-color); padding: 12px 16px; border-bottom: 1px solid var(--border-color);">
+        <h3 style="margin-bottom: 0; font-size: 1rem;">Changes</h3>
+    </div>
+    <div style="padding: 16px; background-color: var(--card-bg);">
+        <% if (!diff) { %>
+            <p class="text-muted" style="text-align: center; padding: 24px;">No changes between these branches.</p>
+        <% } else { %>
+            <pre style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;">
+<%= diff %>
+            </pre>
+        <% } %>
+    </div>
+</div>
+
+<%- include('footer') %>
