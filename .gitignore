@@ -3,3 +3,4 @@ node_modules/
 nodegit.log
 key.pem
 cert.pem
+data.sqlite

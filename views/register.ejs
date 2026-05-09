@@ -19,6 +19,18 @@
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" class="form-control" required>
             </div>
+
+            <div class="form-group">
+                <label for="captcha">Verify you are human</label>
+                <div class="captcha-container" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <img src="/captcha" alt="captcha" id="captcha-img" style="border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" onclick="this.src='/captcha?'+Date.now()">
+                    <button type="button" class="btn btn-sm" onclick="document.getElementById('captcha-img').src='/captcha?'+Date.now()" title="Refresh Captcha">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1.705 8.005a6.302 6.302 0 1 1 2.247 4.772.75.75 0 0 1 .962-1.15 4.802 4.802 0 1 0-1.446-3.622.75.75 0 0 1-1.5 0l-.263.005Zm1.312-3.805a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H5.06l1.47 1.47a.75.75 0 1 1-1.06 1.06l-2.25-2.25a.75.75 0 0 1-.212-.53Z"></path></svg>
+                    </button>
+                </div>
+                <input type="text" id="captcha" name="captcha" class="form-control" placeholder="Enter characters above" required autocomplete="off">
+            </div>
+
             <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Register</button>
         </form>
     </div>

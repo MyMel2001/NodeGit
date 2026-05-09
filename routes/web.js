@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const svgCaptcha = require('svg-captcha');
 
 // Home page
 router.get('/', async (req, res) => {
@@ -16,14 +17,32 @@ router.get('/', async (req, res) => {
         res.render('index');
     }
 });
+// Captcha
+router.get('/captcha', (req, res) => {
+    const captcha = svgCaptcha.create({
+        size: 5,
+        noise: 3,
+        color: true,
+        background: '#f6f8fa'
+    });
+    req.session.captcha = captcha.text.toLowerCase();
+    res.type('svg');
+    res.status(200).send(captcha.data);
+});
 
 // Login
 router.get('/login', (req, res) => res.render('login', { error: null }));
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, captcha } = req.body;
+    
+    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
+        return res.render('login', { error: 'Invalid captcha' });
+    }
+
     const user = await db.users.get(username);
     if (user && await bcrypt.compare(password, user.passwordHash)) {
         req.session.user = { username };
+        delete req.session.captcha; // Clear captcha after success
         res.redirect('/');
     } else {
         res.render('login', { error: 'Invalid credentials' });
@@ -33,13 +52,19 @@ router.post('/login', async (req, res) => {
 // Register
 router.get('/register', (req, res) => res.render('register', { error: null }));
 router.post('/register', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, captcha } = req.body;
+
+    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
+        return res.render('register', { error: 'Invalid captcha' });
+    }
+
     if (await db.users.get(username)) {
         return res.render('register', { error: 'Username taken' });
     }
     const passwordHash = await bcrypt.hash(password, 10);
     await db.users.set(username, { username, passwordHash });
     req.session.user = { username };
+    delete req.session.captcha; // Clear captcha after success
     res.redirect('/');
 });
 

@@ -139,6 +139,21 @@ a:hover {
     background-color: var(--primary-hover);
 }
 
+.btn-sm {
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+.captcha-container img {
+    height: 40px;
+    background-color: #fff;
+    transition: transform 0.2s ease;
+}
+
+.captcha-container img:hover {
+    transform: scale(1.02);
+}
+
 /* Forms */
 .form-group {
     margin-bottom: 16px;
