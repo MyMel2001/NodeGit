@@ -44,8 +44,16 @@ router.post('/', async (req, res) => {
 
         let importedCount = 0;
         for (const repo of githubRepos) {
+            // Skip private repos if we don't have a token to clone them
+            if (repo.private && !githubToken) continue;
+
             const repoName = repo.name;
-            const cloneUrl = repo.clone_url;
+            let cloneUrl = repo.clone_url;
+            
+            // If we have a token, inject it into the clone URL for auth
+            if (githubToken) {
+                cloneUrl = cloneUrl.replace('https://', `https://${githubToken}@`);
+            }
             
             const repoPath = path.join(__dirname, '..', 'repos', owner, repoName + '.git');
             if (fs.existsSync(repoPath)) continue; // skip existing
