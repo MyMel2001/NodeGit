@@ -27,6 +27,7 @@ app.use(session({
 // Provide user context to all views
 app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
+    res.locals.baseUrl = `${req.protocol}://${req.get('host')}`;
     next();
 });
 
