@@ -70,6 +70,11 @@ router.post('/', async (req, res) => {
                     resolve();
                 });
             });
+
+            // Be kind to GitHub and our server: 3-5 second delay between imports
+            if (importedCount < githubRepos.length) {
+                await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 2000) + 3000));
+            }
         }
 
         res.render('import', { error: null, success: `Successfully imported ${importedCount} repositories.` });
