@@ -13,25 +13,34 @@ router.get('/', (req, res) => {
 
 router.post('/', async (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    const { githubToken } = req.body;
+    const { githubToken, githubUsername } = req.body;
     const owner = req.session.user.username;
 
-    if (!githubToken) {
-        return res.render('import', { error: 'GitHub Token is required', success: null });
+    if (!githubToken && !githubUsername) {
+        return res.render('import', { error: 'GitHub Token or Username is required', success: null });
     }
 
     try {
-        // Fetch user info from GitHub
-        const userResp = await fetch('https://api.github.com/user', {
-            headers: { 'Authorization': `token ${githubToken}` }
-        });
-        if (!userResp.ok) throw new Error('Invalid GitHub Token');
+        let githubRepos = [];
         
-        // Fetch public repos
-        const reposResp = await fetch('https://api.github.com/user/repos?visibility=public', {
-            headers: { 'Authorization': `token ${githubToken}` }
-        });
-        const githubRepos = await reposResp.json();
+        if (githubToken) {
+            // Fetch user info from GitHub to verify token
+            const userResp = await fetch('https://api.github.com/user', {
+                headers: { 'Authorization': `token ${githubToken}` }
+            });
+            if (!userResp.ok) throw new Error('Invalid GitHub Token');
+            
+            // Fetch all repos accessible by this token
+            const reposResp = await fetch('https://api.github.com/user/repos?per_page=100', {
+                headers: { 'Authorization': `token ${githubToken}` }
+            });
+            githubRepos = await reposResp.json();
+        } else {
+            // Fetch public repos for a specific user/org
+            const reposResp = await fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100`);
+            if (!reposResp.ok) throw new Error('Could not find GitHub user or organization');
+            githubRepos = await reposResp.json();
+        }
 
         let importedCount = 0;
         for (const repo of githubRepos) {

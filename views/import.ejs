@@ -21,10 +21,18 @@
     <div class="card">
         <form action="/import" method="POST" id="import-form">
             <div class="form-group">
-                <label for="githubToken">GitHub Personal Access Token</label>
-                <input type="password" id="githubToken" name="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" required autofocus>
+                <label for="githubUsername">GitHub Username or Organization</label>
+                <input type="text" id="githubUsername" name="githubUsername" class="form-control" placeholder="e.g. google or torvalds" autofocus>
                 <p class="text-muted" style="font-size: 0.85rem; margin-top: 8px;">
-                    We need a token with <code>repo</code> or <code>public_repo</code> scopes to list and clone your repositories.
+                    Required for public repositories if no token is provided.
+                </p>
+            </div>
+
+            <div class="form-group" style="margin-top: 24px;">
+                <label for="githubToken">GitHub Personal Access Token (Optional for public repos)</label>
+                <input type="password" id="githubToken" name="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                <p class="text-muted" style="font-size: 0.85rem; margin-top: 8px;">
+                    Required only for <strong>private</strong> repositories or to list all your own repos.
                 </p>
             </div>
 
