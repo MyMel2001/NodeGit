@@ -30,16 +30,31 @@ router.post('/', async (req, res) => {
             });
             if (!userResp.ok) throw new Error('Invalid GitHub Token');
             
-            // Fetch all repos accessible by this token
-            const reposResp = await fetch('https://api.github.com/user/repos?per_page=100', {
-                headers: { 'Authorization': `token ${githubToken}` }
-            });
-            githubRepos = await reposResp.json();
+            // Fetch all repos accessible by this token (paginated)
+            let page = 1;
+            while (true) {
+                const reposResp = await fetch(`https://api.github.com/user/repos?per_page=100&page=${page}`, {
+                    headers: { 'Authorization': `token ${githubToken}` }
+                });
+                const pageRepos = await reposResp.json();
+                if (!Array.isArray(pageRepos) || pageRepos.length === 0) break;
+                githubRepos = githubRepos.concat(pageRepos);
+                page++;
+            }
         } else {
-            // Fetch public repos for a specific user/org
-            const reposResp = await fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100`);
-            if (!reposResp.ok) throw new Error('Could not find GitHub user or organization');
-            githubRepos = await reposResp.json();
+            // Fetch public repos for a specific user/org (paginated)
+            let page = 1;
+            while (true) {
+                const reposResp = await fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100&page=${page}`);
+                if (!reposResp.ok) {
+                    if (page === 1) throw new Error('Could not find GitHub user or organization');
+                    break;
+                }
+                const pageRepos = await reposResp.json();
+                if (!Array.isArray(pageRepos) || pageRepos.length === 0) break;
+                githubRepos = githubRepos.concat(pageRepos);
+                page++;
+            }
         }
 
         let importedCount = 0;
