@@ -19,7 +19,7 @@
     <% } %>
 
     <div class="card">
-        <form action="/import" method="POST">
+        <form action="/import" method="POST" id="import-form">
             <div class="form-group">
                 <label for="githubToken">GitHub Personal Access Token</label>
                 <input type="password" id="githubToken" name="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" required autofocus>
@@ -30,9 +30,25 @@
 
             <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border-color);">
 
-            <button type="submit" class="btn btn-primary">Import Repositories</button>
+            <button type="submit" class="btn btn-primary" id="import-btn">Import Repositories</button>
         </form>
     </div>
+
+    <script>
+        document.getElementById('import-form').addEventListener('submit', function() {
+            const btn = document.getElementById('import-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Importing...';
+            
+            // Add a status message below
+            const status = document.createElement('p');
+            status.className = 'text-muted';
+            status.style.marginTop = '16px';
+            status.style.fontSize = '0.9rem';
+            status.innerText = 'Fetching your repositories and cloning them one by one. This process may take a few minutes depending on the number and size of your repositories.';
+            btn.parentNode.appendChild(status);
+        });
+    </script>
 
     <div class="card" style="margin-top: 24px; background-color: var(--bg-color); border-style: dashed;">
         <h3 style="font-size: 1rem; margin-bottom: 8px;">How it works</h3>
