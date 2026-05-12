@@ -124,4 +124,36 @@ router.post('/', async (req, res) => {
     }
 });
 
+router.post('/convert-mirrors', async (req, res) => {
+    if (!req.session.user) return res.status(401).send('Unauthorized');
+    const owner = req.session.user.username;
+
+    try {
+        const allRepos = await db.repos.all();
+        const userRepos = allRepos.filter(r => r.value && r.value.owner === owner && r.value.importedFrom);
+        
+        let convertedCount = 0;
+        for (const repo of userRepos) {
+            const repoPath = path.join(__dirname, '..', 'repos', owner, repo.value.name + '.git');
+            if (fs.existsSync(repoPath)) {
+                try {
+                    const { execSync } = require('child_process');
+                    execSync(`git config --remove-section remote.origin`, { cwd: repoPath, stdio: 'ignore' });
+                } catch (e) {
+                    // Ignore if remote.origin doesn't exist
+                }
+                
+                // Remove importedFrom to mark it as a normal repo
+                repo.value.importedFrom = null;
+                await db.repos.set(repo.id, repo.value);
+                convertedCount++;
+            }
+        }
+        
+        res.render('import', { error: null, success: `Successfully converted ${convertedCount} mirrored repositories to normal repositories.` });
+    } catch (err) {
+        res.render('import', { error: `Failed to convert repositories: ${err.message}`, success: null });
+    }
+});
+
 module.exports = router;

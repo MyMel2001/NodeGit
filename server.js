@@ -41,6 +41,10 @@ app.use('/import', githubImportRouter);
 // The Git server handles paths like /user/repo.git
 app.use('/', gitRouter);
 
+// Start background services
+const repoUpdater = require('./services/repo-updater');
+repoUpdater.startAutoUpdater();
+
 // HTTPS Support
 const sslOptions = {
     key: fs.existsSync('key.pem') ? fs.readFileSync('key.pem') : null,
