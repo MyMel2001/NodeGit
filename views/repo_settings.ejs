@@ -1,0 +1,46 @@
+<%- include('header') %>
+
+<div class="flex-between" style="align-items: flex-start; margin-bottom: 16px;">
+    <div>
+        <h2 style="margin-bottom: 4px;">
+            <a href="/<%= repo.owner %>"><%= repo.owner %></a> / 
+            <a href="/<%= repo.owner %>/<%= repo.name %>" style="font-weight: 700;"><%= repo.name %></a>
+            <span class="text-muted" style="font-size: 0.9rem; font-weight: 400; border: 1px solid var(--border-color); padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                <%= repo.isPrivate ? 'Private' : 'Public' %>
+            </span>
+        </h2>
+    </div>
+</div>
+
+<div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); display: flex; gap: 24px;">
+    <a href="/<%= repo.owner %>/<%= repo.name %>" style="padding: 8px 0; color: var(--fg-color);">Code</a>
+    <a href="/<%= repo.owner %>/<%= repo.name %>/pulls" style="padding: 8px 0; color: var(--fg-color);">Pull Requests</a>
+    <a href="/<%= repo.owner %>/<%= repo.name %>/releases" style="padding: 8px 0; color: var(--fg-color);">Releases</a>
+    <a href="/<%= repo.owner %>/<%= repo.name %>/settings" style="padding: 8px 0; border-bottom: 2px solid var(--primary-color); font-weight: 600;">Settings</a>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <h3>Repository Privacy</h3>
+    <p class="text-muted" style="margin-bottom: 16px;">
+        Toggle the visibility of your repository. Private repositories are only visible to you.
+    </p>
+    <form action="/<%= repo.owner %>/<%= repo.name %>/settings/privacy" method="POST">
+        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; cursor: pointer;">
+            <input type="checkbox" name="isPrivate" <%= repo.isPrivate ? 'checked' : '' %>>
+            Make repository private
+        </label>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
+</div>
+
+<div class="card" style="border-color: var(--danger-color);">
+    <h3 style="color: var(--danger-color);">Danger Zone</h3>
+    <p class="text-muted" style="margin-bottom: 16px;">
+        Deleting a repository is irreversible. All code, pull requests, and releases will be permanently deleted.
+    </p>
+    <form action="/<%= repo.owner %>/<%= repo.name %>/settings/delete" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete this repository? This action cannot be undone.');">
+        <button type="submit" class="btn" style="background-color: var(--danger-color); color: white;">Delete Repository</button>
+    </form>
+</div>
+
+<%- include('footer') %>

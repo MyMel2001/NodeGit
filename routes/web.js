@@ -74,6 +74,39 @@ router.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+// Search
+router.get('/search', async (req, res) => {
+    const q = (req.query.q || '').toLowerCase();
+    
+    const allRepos = await db.repos.all() || [];
+    const repos = allRepos
+        .map(r => r.value)
+        .filter(r => r && r.name && (r.name.toLowerCase().includes(q) || r.owner.toLowerCase().includes(q)))
+        .filter(r => !r.isPrivate || (req.session.user && req.session.user.username === r.owner));
+        
+    const allUsers = await db.users.all() || [];
+    const users = allUsers
+        .map(u => u.value)
+        .filter(u => u && u.username && u.username.toLowerCase().includes(q));
+        
+    res.render('search', { query: q, repos, users });
+});
+
+// User Profile
+router.get('/user/:username', async (req, res) => {
+    const username = req.params.username;
+    const profileUser = await db.users.get(username);
+    if (!profileUser) return res.status(404).send('User not found');
+    
+    const allRepos = await db.repos.all() || [];
+    const repos = allRepos
+        .map(r => r.value)
+        .filter(r => r && r.owner === profileUser.username)
+        .filter(r => !r.isPrivate || (req.session.user && req.session.user.username === r.owner));
+        
+    res.render('user', { profileUser, repos });
+});
+
 // Create Repo
 router.get('/new', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
@@ -105,16 +138,33 @@ router.post('/new', async (req, res) => {
     res.redirect(`/${owner}/${name}`);
 });
 
-// View Repo
-router.get('/:owner/:repo', async (req, res) => {
+// Middleware for repo access
+const ensureRepoAccess = async (req, res, next) => {
     const { owner, repo } = req.params;
     const repoData = await db.repos.get(`${owner}_${repo}`);
     if (!repoData) return res.status(404).send('Repo not found');
+    
+    if (repoData.isPrivate) {
+        if (!req.session.user || req.session.user.username !== owner) {
+            return res.status(404).send('Repo not found'); // return 404 instead of 403 to hide existence
+        }
+    }
+    
+    req.repoData = repoData;
+    next();
+};
+
+// View Repo
+router.get('/:owner/:repo', ensureRepoAccess, async (req, res) => {
+    const { owner, repo } = req.params;
+    const repoData = req.repoData;
     
     const repoPath = path.join(__dirname, '..', 'repos', owner, repo + '.git');
     let files = [];
     let commits = [];
     let branches = [];
+    
+    let readmeContent = null;
     
     try {
         const lsTree = execSync(`git ls-tree -r HEAD --name-only`, { cwd: repoPath }).toString();
@@ -125,29 +175,105 @@ router.get('/:owner/:repo', async (req, res) => {
 
         const branchList = execSync(`git branch --format='%(refname:short)'`, { cwd: repoPath }).toString();
         branches = branchList.split('\n').filter(Boolean);
+        
+        const readmeFile = files.find(f => f.toLowerCase() === 'readme.md' || f.toLowerCase() === 'readme.txt' || f.toLowerCase() === 'readme');
+        if (readmeFile) {
+            readmeContent = execSync(`git show HEAD:${readmeFile}`, { cwd: repoPath }).toString();
+        }
     } catch (err) {
         commits = ['Empty repository'];
     }
     
-    res.render('repo', { repo: repoData, files, commits, branches });
+    res.render('repo', { repo: repoData, files, commits, branches, readmeContent });
+});
+
+// Fork Repo
+router.post('/:owner/:repo/fork', ensureRepoAccess, async (req, res) => {
+    const { owner, repo } = req.params;
+    const { repoData } = req;
+    
+    if (!req.session.user) return res.redirect('/login');
+    const currentUser = req.session.user.username;
+    
+    if (currentUser === owner) {
+        return res.status(400).send('Cannot fork your own repository');
+    }
+    
+    // Check if fork already exists
+    const newRepoName = repo;
+    const existingRepo = await db.repos.get(`${currentUser}_${newRepoName}`);
+    if (existingRepo) {
+        return res.status(400).send('You already have a repository with this name');
+    }
+    
+    const newRepoData = {
+        owner: currentUser,
+        name: newRepoName,
+        isPrivate: repoData.isPrivate,
+        createdAt: Date.now(),
+        forkedFrom: `${owner}/${repo}`
+    };
+    
+    const originalRepoPath = path.join(__dirname, '..', 'repos', owner, repo + '.git');
+    const newRepoPath = path.join(__dirname, '..', 'repos', currentUser, newRepoName + '.git');
+    
+    try {
+        fs.mkdirSync(newRepoPath, { recursive: true });
+        execSync(`git clone --bare ${originalRepoPath} ${newRepoPath}`);
+        await db.repos.set(`${currentUser}_${newRepoName}`, newRepoData);
+        res.redirect(`/${currentUser}/${newRepoName}`);
+    } catch (e) {
+        return res.status(500).send('Error forking repository: ' + e.message);
+    }
+});
+
+// Settings Routes
+router.get('/:owner/:repo/settings', ensureRepoAccess, (req, res) => {
+    const { repoData } = req;
+    if (!req.session.user || req.session.user.username !== repoData.owner) {
+        return res.status(403).send('Forbidden');
+    }
+    res.render('repo_settings', { repo: repoData });
+});
+
+router.post('/:owner/:repo/settings/privacy', ensureRepoAccess, async (req, res) => {
+    const { owner, repo } = req.params;
+    const { repoData } = req;
+    if (!req.session.user || req.session.user.username !== owner) return res.status(403).send('Forbidden');
+    
+    repoData.isPrivate = req.body.isPrivate === 'on';
+    await db.repos.set(`${owner}_${repo}`, repoData);
+    res.redirect(`/${owner}/${repo}/settings`);
+});
+
+router.post('/:owner/:repo/settings/delete', ensureRepoAccess, async (req, res) => {
+    const { owner, repo } = req.params;
+    if (!req.session.user || req.session.user.username !== owner) return res.status(403).send('Forbidden');
+    
+    await db.repos.delete(`${owner}_${repo}`);
+    const repoPath = path.join(__dirname, '..', 'repos', owner, repo + '.git');
+    if (fs.existsSync(repoPath)) {
+        fs.rmSync(repoPath, { recursive: true, force: true });
+    }
+    res.redirect('/');
 });
 
 // PR Routes
-router.get('/:owner/:repo/pulls', async (req, res) => {
+router.get('/:owner/:repo/pulls', ensureRepoAccess, async (req, res) => {
     const { owner, repo } = req.params;
     const allPulls = await db.pullRequests.all();
     const pulls = allPulls.filter(p => p.id.startsWith(`${owner}_${repo}_`));
     res.render('pulls', { owner, repo, pulls });
 });
 
-router.get('/:owner/:repo/pull/new', async (req, res) => {
+router.get('/:owner/:repo/pull/new', ensureRepoAccess, async (req, res) => {
     const { owner, repo } = req.params;
     const repoPath = path.join(__dirname, '..', 'repos', owner, repo + '.git');
     const branches = execSync(`git branch --format='%(refname:short)'`, { cwd: repoPath }).toString().split('\n').filter(Boolean);
     res.render('new_pull', { owner, repo, branches });
 });
 
-router.post('/:owner/:repo/pull/new', async (req, res) => {
+router.post('/:owner/:repo/pull/new', ensureRepoAccess, async (req, res) => {
     const { owner, repo } = req.params;
     const { title, base, head } = req.body;
     const id = `${owner}_${repo}_${Date.now()}`;
@@ -160,7 +286,7 @@ router.post('/:owner/:repo/pull/new', async (req, res) => {
     res.redirect(`/${owner}/${repo}/pulls`);
 });
 
-router.get('/:owner/:repo/pull/:id', async (req, res) => {
+router.get('/:owner/:repo/pull/:id', ensureRepoAccess, async (req, res) => {
     const { owner, repo, id } = req.params;
     const pr = await db.pullRequests.get(id);
     if (!pr) return res.status(404).send('PR not found');
@@ -171,7 +297,7 @@ router.get('/:owner/:repo/pull/:id', async (req, res) => {
     res.render('pull_detail', { pr, diff });
 });
 
-router.post('/:owner/:repo/pull/:id/merge', async (req, res) => {
+router.post('/:owner/:repo/pull/:id/merge', ensureRepoAccess, async (req, res) => {
     const { owner, repo, id } = req.params;
     const pr = await db.pullRequests.get(id);
     if (!pr) return res.status(404).send('PR not found');
@@ -197,7 +323,7 @@ router.post('/:owner/:repo/pull/:id/merge', async (req, res) => {
 });
 
 // Releases
-router.get('/:owner/:repo/releases', async (req, res) => {
+router.get('/:owner/:repo/releases', ensureRepoAccess, async (req, res) => {
     const { owner, repo } = req.params;
     const repoPath = path.join(__dirname, '..', 'repos', owner, repo + '.git');
     let releases = [];
@@ -214,12 +340,12 @@ router.get('/:owner/:repo/releases', async (req, res) => {
     res.render('releases', { owner, repo, releases });
 });
 
-router.get('/:owner/:repo/releases/new', (req, res) => {
+router.get('/:owner/:repo/releases/new', ensureRepoAccess, (req, res) => {
     const { owner, repo } = req.params;
     res.render('new_release', { owner, repo });
 });
 
-router.post('/:owner/:repo/releases/new', async (req, res) => {
+router.post('/:owner/:repo/releases/new', ensureRepoAccess, async (req, res) => {
     const { owner, repo } = req.params;
     const { tag, title, body } = req.body;
     const repoPath = path.join(__dirname, '..', 'repos', owner, repo + '.git');

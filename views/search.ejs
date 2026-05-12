@@ -1,0 +1,48 @@
+<%- include('header') %>
+
+<div style="max-width: 800px; margin: 0 auto;">
+    <h2 style="margin-bottom: 24px;">Search Results for "<%= query %>"</h2>
+
+    <div style="margin-bottom: 32px;">
+        <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Repositories (<%= repos.length %>)</h3>
+        <% if (repos.length === 0) { %>
+            <p class="text-muted">No repositories found.</p>
+        <% } else { %>
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                <% repos.forEach(repo => { %>
+                    <div class="card" style="padding: 16px;">
+                        <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1rem;">
+                            <a href="/<%= repo.owner %>" style="color: var(--text-color);"><%= repo.owner %></a> / 
+                            <a href="/<%= repo.owner %>/<%= repo.name %>" style="color: var(--primary-color);"><%= repo.name %></a>
+                            <% if (repo.isPrivate) { %>
+                                <span style="font-size: 0.8rem; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-muted); margin-left: 8px;">Private</span>
+                            <% } %>
+                        </h3>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+    </div>
+
+    <div>
+        <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Users (<%= users.length %>)</h3>
+        <% if (users.length === 0) { %>
+            <p class="text-muted">No users found.</p>
+        <% } else { %>
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                <% users.forEach(u => { %>
+                    <div class="card" style="display: flex; align-items: center; gap: 16px; padding: 16px;">
+                        <div style="width: 48px; height: 48px; background-color: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; font-weight: bold;">
+                            <%= u.username.charAt(0).toUpperCase() %>
+                        </div>
+                        <h3 style="margin: 0; font-size: 1.1rem;">
+                            <a href="/user/<%= u.username %>" style="color: var(--primary-color);"><%= u.username %></a>
+                        </h3>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<%- include('footer') %>

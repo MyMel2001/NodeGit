@@ -13,7 +13,13 @@
     <div style="display: flex; gap: 8px;">
         <button class="btn">Watch</button>
         <button class="btn">Star</button>
-        <button class="btn">Fork</button>
+        <% if (user && user.username !== repo.owner) { %>
+        <form action="/<%= repo.owner %>/<%= repo.name %>/fork" method="POST" style="margin: 0;">
+            <button type="submit" class="btn">Fork</button>
+        </form>
+        <% } else { %>
+        <button class="btn" disabled title="You cannot fork your own repository">Fork</button>
+        <% } %>
     </div>
 </div>
 
@@ -21,6 +27,9 @@
     <a href="/<%= repo.owner %>/<%= repo.name %>" style="padding: 8px 0; border-bottom: 2px solid var(--primary-color); font-weight: 600;">Code</a>
     <a href="/<%= repo.owner %>/<%= repo.name %>/pulls" style="padding: 8px 0; color: var(--fg-color);">Pull Requests</a>
     <a href="/<%= repo.owner %>/<%= repo.name %>/releases" style="padding: 8px 0; color: var(--fg-color);">Releases</a>
+    <% if (user && user.username === repo.owner) { %>
+    <a href="/<%= repo.owner %>/<%= repo.name %>/settings" style="padding: 8px 0; color: var(--fg-color);">Settings</a>
+    <% } %>
 </div>
 
 <div class="card" style="padding: 12px 16px; margin-bottom: 16px; background-color: var(--bg-color); border-color: var(--border-color);">
@@ -68,5 +77,17 @@
         <% }); %>
     <% } %>
 </div>
+
+<% if (readmeContent) { %>
+<div class="card" style="margin-top: 24px; padding: 24px;">
+    <div id="readme-raw" style="display: none;"><%= readmeContent %></div>
+    <div id="readme-rendered" style="font-family: sans-serif; line-height: 1.6;"></div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        const raw = document.getElementById('readme-raw').textContent;
+        document.getElementById('readme-rendered').innerHTML = marked.parse(raw);
+    </script>
+</div>
+<% } %>
 
 <%- include('footer') %>

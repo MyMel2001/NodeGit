@@ -1,0 +1,49 @@
+<%- include('header') %>
+
+<div style="display: flex; gap: 24px;">
+    <!-- Sidebar -->
+    <div style="width: 280px; flex-shrink: 0;">
+        <div class="card" style="text-align: center; padding: 32px 16px;">
+            <div style="width: 120px; height: 120px; background-color: var(--primary-color); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: bold;">
+                <%= profileUser.username.charAt(0).toUpperCase() %>
+            </div>
+            <h2 style="margin: 0;"><%= profileUser.username %></h2>
+            <p class="text-muted">NodeGit User</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="flex-grow: 1;">
+        <div style="border-bottom: 1px solid var(--border-color); margin-bottom: 24px; padding-bottom: 8px;">
+            <h3 style="margin: 0;">Repositories <span style="background-color: var(--border-color); padding: 2px 8px; border-radius: 12px; font-size: 0.85rem;"><%= repos.length %></span></h3>
+        </div>
+
+        <% if (repos.length === 0) { %>
+            <div class="card" style="text-align: center; padding: 32px;">
+                <p class="text-muted">This user has no public repositories.</p>
+            </div>
+        <% } else { %>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <% repos.forEach(repo => { %>
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h3 style="margin-top: 0; margin-bottom: 8px;">
+                                    <a href="/<%= repo.owner %>/<%= repo.name %>" style="color: var(--primary-color);"><%= repo.name %></a>
+                                </h3>
+                                <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 0;">
+                                    Updated <%= new Date(repo.createdAt).toLocaleDateString() %>
+                                </p>
+                            </div>
+                            <% if (repo.isPrivate) { %>
+                                <span style="font-size: 0.8rem; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-muted);">Private</span>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<%- include('footer') %>
