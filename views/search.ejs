@@ -4,26 +4,6 @@
     <h2 style="margin-bottom: 24px;">Search Results for "<%= query %>"</h2>
 
     <div>
-        <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Organizations (<%= orgs.length %>)</h3>
-        <% if (orgs.length === 0) { %>
-            <p class="text-muted">No organizations found.</p>
-        <% } else { %>
-            <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
-                <% orgs.forEach(o => { %>
-                    <div class="card" style="display: flex; align-items: center; gap: 16px; padding: 16px;">
-                        <div style="width: 48px; height: 48px; background-color: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; font-weight: bold;">
-                            <%= o.name.charAt(0).toUpperCase() %>
-                        </div>
-                        <h3 style="margin: 0; font-size: 1.1rem;">
-                            <a href="/org/<%= o.name %>" style="color: var(--primary-color);"><%= o.name %></a>
-                        </h3>
-                    </div>
-                <% }); %>
-            </div>
-        <% } %>
-    </div>
-    
-    <div>
         <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Users (<%= users.length %>)</h3>
         <% if (users.length === 0) { %>
             <p class="text-muted">No users found.</p>
@@ -36,6 +16,26 @@
                         </div>
                         <h3 style="margin: 0; font-size: 1.1rem;">
                             <a href="/user/<%= u.username %>" style="color: var(--primary-color);"><%= u.username %></a>
+                        </h3>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+    </div>
+
+    <div>
+        <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Organizations (<%= orgs.length %>)</h3>
+        <% if (orgs.length === 0) { %>
+            <p class="text-muted">No organizations found.</p>
+        <% } else { %>
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                <% orgs.forEach(o => { %>
+                    <div class="card" style="display: flex; align-items: center; gap: 16px; padding: 16px;">
+                        <div style="width: 48px; height: 48px; background-color: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; font-weight: bold;">
+                            <%= o.name.charAt(0).toUpperCase() %>
+                        </div>
+                        <h3 style="margin: 0; font-size: 1.1rem;">
+                            <a href="/org/<%= o.name %>" style="color: var(--primary-color);"><%= o.name %></a>
                         </h3>
                     </div>
                 <% }); %>
