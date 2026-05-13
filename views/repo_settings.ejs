@@ -11,7 +11,7 @@
 <div class="flex-between" style="align-items: flex-start; margin-bottom: 16px;">
     <div>
         <h2 style="margin-bottom: 4px;">
-            <a href="/<%= repo.owner %>"><%= repo.owner %></a> / 
+            <a href="<%= ownerIsOrg ? '/org/' : '/user/' %><%= repo.owner %>"><%= repo.owner %></a> / 
             <a href="/<%= repo.owner %>/<%= repo.name %>" style="font-weight: 700;"><%= repo.name %></a>
             <span class="text-muted" style="font-size: 0.9rem; font-weight: 400; border: 1px solid var(--border-color); padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
                 <%= repo.isPrivate ? 'Private' : 'Public' %>

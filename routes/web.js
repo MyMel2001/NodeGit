@@ -249,16 +249,16 @@ const ensureRepoAccess = async (req, res, next) => {
     const repoData = await db.repos.get(`${owner}_${repo}`);
     if (!repoData) return res.status(404).send('Repo not found');
     
+    const orgData = await db.orgs.get(owner);
+    req.ownerIsOrg = !!orgData;
+    
     if (repoData.isPrivate) {
         let isAuthorized = false;
         if (req.session.user) {
             if (req.session.user.username === owner) {
                 isAuthorized = true;
-            } else {
-                const orgData = await db.orgs.get(owner);
-                if (orgData && orgData.owner === req.session.user.username) {
-                    isAuthorized = true;
-                }
+            } else if (orgData && orgData.owner === req.session.user.username) {
+                isAuthorized = true;
             }
         }
         if (!isAuthorized) {
@@ -300,7 +300,7 @@ router.get('/:owner/:repo', ensureRepoAccess, async (req, res) => {
         commits = ['Empty repository'];
     }
     
-    res.render('repo', { repo: repoData, files, commits, branches, readmeContent });
+    res.render('repo', { repo: repoData, files, commits, branches, readmeContent, ownerIsOrg: req.ownerIsOrg });
 });
 
 // Fork Repo
@@ -358,7 +358,7 @@ router.get('/:owner/:repo/settings', ensureRepoAccess, async (req, res) => {
     if (!(await isRepoOwner(req, repoData))) {
         return res.status(403).send('Forbidden');
     }
-    res.render('repo_settings', { repo: repoData, error: req.query.error || null });
+    res.render('repo_settings', { repo: repoData, error: req.query.error || null, ownerIsOrg: req.ownerIsOrg });
 });
 
 router.post('/:owner/:repo/settings/privacy', ensureRepoAccess, async (req, res) => {
