@@ -113,6 +113,34 @@ router.get('/user/:username', async (req, res) => {
     res.render('user', { profileUser, repos });
 });
 
+// Create Organization (must be before /org/:orgname to avoid wildcard match)
+router.get('/org/new', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    res.render('new_org', { error: null });
+});
+
+router.post('/org/new', async (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    const { orgname, captcha } = req.body;
+    
+    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
+        return res.render('new_org', { error: 'Invalid captcha' });
+    }
+
+    if (await db.users.get(orgname) || await db.orgs.get(orgname)) {
+        return res.render('new_org', { error: 'Organization name is already taken' });
+    }
+    
+    await db.orgs.set(orgname, {
+        name: orgname,
+        owner: req.session.user.username,
+        createdAt: Date.now()
+    });
+    
+    delete req.session.captcha; // clear captcha
+    res.redirect(`/org/${orgname}`);
+});
+
 // Organization Profile
 router.get('/org/:orgname', async (req, res) => {
     const orgname = req.params.orgname;
@@ -170,34 +198,6 @@ router.post('/org/:orgname/settings/delete', async (req, res) => {
     await db.orgs.delete(orgname);
     
     res.redirect('/');
-});
-
-// Create Organization
-router.get('/org/new', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    res.render('new_org', { error: null });
-});
-
-router.post('/org/new', async (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    const { orgname, captcha } = req.body;
-    
-    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
-        return res.render('new_org', { error: 'Invalid captcha' });
-    }
-
-    if (await db.users.get(orgname) || await db.orgs.get(orgname)) {
-        return res.render('new_org', { error: 'Organization name is already taken' });
-    }
-    
-    await db.orgs.set(orgname, {
-        name: orgname,
-        owner: req.session.user.username,
-        createdAt: Date.now()
-    });
-    
-    delete req.session.captcha; // clear captcha
-    res.redirect(`/org/${orgname}`);
 });
 
 // Create Repo
