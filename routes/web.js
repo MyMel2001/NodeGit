@@ -58,7 +58,7 @@ router.post('/register', async (req, res) => {
         return res.render('register', { error: 'Invalid captcha' });
     }
 
-    if (await db.users.get(username)) {
+    if (await db.users.get(username) || await db.orgs.get(username)) {
         return res.render('register', { error: 'Username taken' });
     }
     const passwordHash = await bcrypt.hash(password, 10);
@@ -84,12 +84,18 @@ router.get('/search', async (req, res) => {
         .filter(r => r && r.name && (r.name.toLowerCase().includes(q) || r.owner.toLowerCase().includes(q)))
         .filter(r => !r.isPrivate || (req.session.user && req.session.user.username === r.owner));
         
+        
     const allUsers = await db.users.all() || [];
     const users = allUsers
         .map(u => u.value)
         .filter(u => u && u.username && u.username.toLowerCase().includes(q));
         
-    res.render('search', { query: q, repos, users });
+    const allOrgs = await db.orgs.all() || [];
+    const orgs = allOrgs
+        .map(o => o.value)
+        .filter(o => o && o.name && o.name.toLowerCase().includes(q));
+        
+    res.render('search', { query: q, repos, users, orgs });
 });
 
 // User Profile
@@ -107,16 +113,115 @@ router.get('/user/:username', async (req, res) => {
     res.render('user', { profileUser, repos });
 });
 
-// Create Repo
-router.get('/new', (req, res) => {
+// Organization Profile
+router.get('/org/:orgname', async (req, res) => {
+    const orgname = req.params.orgname;
+    const orgData = await db.orgs.get(orgname);
+    if (!orgData) return res.status(404).send('Organization not found');
+    
+    const allRepos = await db.repos.all() || [];
+    const repos = allRepos
+        .map(r => r.value)
+        .filter(r => r && r.owner === orgData.name)
+        .filter(r => !r.isPrivate || (req.session.user && req.session.user.username === orgData.owner));
+        
+    res.render('org', { org: orgData, repos });
+});
+
+// Organization Settings
+router.get('/org/:orgname/settings', async (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    res.render('new_repo');
+    const orgname = req.params.orgname;
+    const orgData = await db.orgs.get(orgname);
+    
+    if (!orgData) return res.status(404).send('Organization not found');
+    if (orgData.owner !== req.session.user.username) return res.status(403).send('Forbidden');
+    
+    res.render('org_settings', { org: orgData });
+});
+
+router.post('/org/:orgname/settings/delete', async (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    const orgname = req.params.orgname;
+    const orgData = await db.orgs.get(orgname);
+    
+    if (!orgData) return res.status(404).send('Organization not found');
+    if (orgData.owner !== req.session.user.username) return res.status(403).send('Forbidden');
+    
+    // Delete all repos owned by the org
+    const allRepos = await db.repos.all();
+    const orgRepos = allRepos.filter(r => r.value && r.value.owner === orgname);
+    
+    for (const repo of orgRepos) {
+        await db.repos.delete(repo.id);
+        const repoPath = path.join(__dirname, '..', 'repos', orgname, repo.value.name + '.git');
+        if (fs.existsSync(repoPath)) {
+            fs.rmSync(repoPath, { recursive: true, force: true });
+        }
+    }
+    
+    // Delete the org directory
+    const orgPath = path.join(__dirname, '..', 'repos', orgname);
+    if (fs.existsSync(orgPath)) {
+        fs.rmSync(orgPath, { recursive: true, force: true });
+    }
+    
+    // Delete the org record
+    await db.orgs.delete(orgname);
+    
+    res.redirect('/');
+});
+
+// Create Organization
+router.get('/org/new', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    res.render('new_org', { error: null });
+});
+
+router.post('/org/new', async (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    const { orgname, captcha } = req.body;
+    
+    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
+        return res.render('new_org', { error: 'Invalid captcha' });
+    }
+
+    if (await db.users.get(orgname) || await db.orgs.get(orgname)) {
+        return res.render('new_org', { error: 'Organization name is already taken' });
+    }
+    
+    await db.orgs.set(orgname, {
+        name: orgname,
+        owner: req.session.user.username,
+        createdAt: Date.now()
+    });
+    
+    delete req.session.captcha; // clear captcha
+    res.redirect(`/org/${orgname}`);
+});
+
+// Create Repo
+router.get('/new', async (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    const allOrgs = await db.orgs.all() || [];
+    const userOrgs = allOrgs.filter(o => o.value && o.value.owner === req.session.user.username).map(o => o.value.name);
+    res.render('new_repo', { userOrgs });
 });
 
 router.post('/new', async (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    const { name, isPrivate } = req.body;
-    const owner = req.session.user.username;
+    const { targetOwner, name, isPrivate } = req.body;
+    
+    const currentUser = req.session.user.username;
+    let owner = currentUser;
+    
+    if (targetOwner && targetOwner !== currentUser) {
+        const orgData = await db.orgs.get(targetOwner);
+        if (!orgData || orgData.owner !== currentUser) {
+            return res.status(403).send('Forbidden: Not org owner');
+        }
+        owner = targetOwner;
+    }
     
     // Create git repo on disk
     const repoPath = path.join(__dirname, '..', 'repos', owner, name + '.git');
@@ -145,7 +250,18 @@ const ensureRepoAccess = async (req, res, next) => {
     if (!repoData) return res.status(404).send('Repo not found');
     
     if (repoData.isPrivate) {
-        if (!req.session.user || req.session.user.username !== owner) {
+        let isAuthorized = false;
+        if (req.session.user) {
+            if (req.session.user.username === owner) {
+                isAuthorized = true;
+            } else {
+                const orgData = await db.orgs.get(owner);
+                if (orgData && orgData.owner === req.session.user.username) {
+                    isAuthorized = true;
+                }
+            }
+        }
+        if (!isAuthorized) {
             return res.status(404).send('Repo not found'); // return 404 instead of 403 to hide existence
         }
     }

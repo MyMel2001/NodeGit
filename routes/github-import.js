@@ -6,15 +6,26 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    res.render('import', { error: null, success: null });
+    const allOrgs = await db.orgs.all() || [];
+    const userOrgs = allOrgs.filter(o => o.value && o.value.owner === req.session.user.username).map(o => o.value.name);
+    res.render('import', { error: null, success: null, userOrgs });
 });
 
 router.post('/', async (req, res) => {
     if (!req.session.user) return res.status(401).send('Unauthorized');
-    const { githubToken, githubUsername } = req.body;
-    const owner = req.session.user.username;
+    const { githubToken, githubUsername, targetOwner } = req.body;
+    const currentUser = req.session.user.username;
+    
+    let owner = currentUser;
+    if (targetOwner && targetOwner !== currentUser) {
+        const orgData = await db.orgs.get(targetOwner);
+        if (!orgData || orgData.owner !== currentUser) {
+            return res.status(403).json({ error: 'Forbidden: Not org owner' });
+        }
+        owner = targetOwner;
+    }
 
     if (!githubToken && !githubUsername) {
         return res.status(400).json({ error: 'GitHub Token or Username is required' });
@@ -129,12 +140,16 @@ router.post('/convert-mirrors', async (req, res) => {
     const owner = req.session.user.username;
 
     try {
+        const allOrgs = await db.orgs.all() || [];
+        const userOrgs = allOrgs.filter(o => o.value && o.value.owner === owner).map(o => o.value.name);
+        
         const allRepos = await db.repos.all();
-        const userRepos = allRepos.filter(r => r.value && r.value.owner === owner && r.value.importedFrom);
+        const userRepos = allRepos.filter(r => r.value && (r.value.owner === owner || userOrgs.includes(r.value.owner)) && r.value.importedFrom);
         
         let convertedCount = 0;
         for (const repo of userRepos) {
-            const repoPath = path.join(__dirname, '..', 'repos', owner, repo.value.name + '.git');
+            const repoOwner = repo.value.owner;
+            const repoPath = path.join(__dirname, '..', 'repos', repoOwner, repo.value.name + '.git');
             if (fs.existsSync(repoPath)) {
                 try {
                     const { execSync } = require('child_process');

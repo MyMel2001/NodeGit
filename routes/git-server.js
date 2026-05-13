@@ -40,7 +40,17 @@ router.use('/:owner/:repo.git', async (req, res, next) => {
         return res.status(401).send('Unauthorized');
     }
 
-    if (username !== owner) {
+    let isAuthorized = false;
+    if (username === owner) {
+        isAuthorized = true;
+    } else {
+        const orgData = await db.orgs.get(owner);
+        if (orgData && orgData.owner === username) {
+            isAuthorized = true;
+        }
+    }
+
+    if (!isAuthorized) {
         return res.status(403).send('Forbidden');
     }
 

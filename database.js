@@ -53,12 +53,14 @@ const wrapTable = (table) => ({
 });
 
 const users = wrapTable(db.table('users'));
+const orgs = wrapTable(db.table('orgs'));
 const repos = wrapTable(db.table('repos'));
 const pullRequests = wrapTable(db.table('pull_requests'));
 const ciRuns = wrapTable(db.table('ci_runs'));
 
 module.exports = {
     users,
+    orgs,
     repos,
     pullRequests,
     ciRuns

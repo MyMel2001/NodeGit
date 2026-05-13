@@ -1,0 +1,21 @@
+<%- include('header') %>
+
+<div style="max-width: 600px; margin: 40px auto;">
+    <div class="flex-between" style="align-items: flex-start; margin-bottom: 24px;">
+        <h2 style="margin: 0;">
+            <a href="/org/<%= org.name %>" style="color: var(--text-color);"><%= org.name %></a> / Settings
+        </h2>
+    </div>
+
+    <div class="card" style="border-color: var(--danger-color);">
+        <h3 style="color: var(--danger-color);">Danger Zone</h3>
+        <p class="text-muted" style="margin-bottom: 16px;">
+            Deleting an organization is irreversible. All repositories belonging to this organization will be permanently deleted.
+        </p>
+        <form action="/org/<%= org.name %>/settings/delete" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete this organization? This action cannot be undone and will delete ALL repositories within the organization.');">
+            <button type="submit" class="btn" style="background-color: var(--danger-color); color: white;">Delete Organization</button>
+        </form>
+    </div>
+</div>
+
+<%- include('footer') %>
