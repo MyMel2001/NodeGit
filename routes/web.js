@@ -93,6 +93,12 @@ router.post('/settings/delete-account', async (req, res) => {
         return res.redirect('/settings/profile?error=Invalid captcha');
     }
 
+    const userRecord = await db.users.get(username);
+    if (!userRecord) {
+        req.session.destroy();
+        return res.redirect('/login?error=Account not found');
+    }
+
     try {
         // Function to delete a repo and its data
         const deleteRepoCompletely = async (owner, repoName) => {
@@ -252,7 +258,7 @@ router.get('/org/:orgname/settings', async (req, res) => {
     if (!orgData) return res.status(404).send('Organization not found');
     if (orgData.owner !== req.session.user.username) return res.status(403).send('Forbidden');
     
-    res.render('org_settings', { org: orgData });
+    res.render('org_settings', { org: orgData, error: req.query.error || null });
 });
 
 router.post('/org/:orgname/settings/delete', async (req, res) => {
@@ -262,6 +268,12 @@ router.post('/org/:orgname/settings/delete', async (req, res) => {
     
     if (!orgData) return res.status(404).send('Organization not found');
     if (orgData.owner !== req.session.user.username) return res.status(403).send('Forbidden');
+    
+    const { captcha } = req.body;
+    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
+        return res.redirect(`/org/${orgname}/settings?error=Invalid captcha`);
+    }
+    delete req.session.captcha;
     
     // Delete all repos owned by the org
     const allRepos = await db.repos.all();
