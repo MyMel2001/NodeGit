@@ -343,19 +343,28 @@ router.post('/:owner/:repo/fork', ensureRepoAccess, async (req, res) => {
     }
 });
 
+// Helper to check if user is repo owner
+const isRepoOwner = async (req, repoData) => {
+    if (!req.session.user) return false;
+    if (req.session.user.username === repoData.owner) return true;
+    const orgData = await db.orgs.get(repoData.owner);
+    if (orgData && orgData.owner === req.session.user.username) return true;
+    return false;
+};
+
 // Settings Routes
-router.get('/:owner/:repo/settings', ensureRepoAccess, (req, res) => {
+router.get('/:owner/:repo/settings', ensureRepoAccess, async (req, res) => {
     const { repoData } = req;
-    if (!req.session.user || req.session.user.username !== repoData.owner) {
+    if (!(await isRepoOwner(req, repoData))) {
         return res.status(403).send('Forbidden');
     }
-    res.render('repo_settings', { repo: repoData });
+    res.render('repo_settings', { repo: repoData, error: req.query.error || null });
 });
 
 router.post('/:owner/:repo/settings/privacy', ensureRepoAccess, async (req, res) => {
     const { owner, repo } = req.params;
     const { repoData } = req;
-    if (!req.session.user || req.session.user.username !== owner) return res.status(403).send('Forbidden');
+    if (!(await isRepoOwner(req, repoData))) return res.status(403).send('Forbidden');
     
     repoData.isPrivate = req.body.isPrivate === 'on';
     await db.repos.set(`${owner}_${repo}`, repoData);
@@ -364,7 +373,8 @@ router.post('/:owner/:repo/settings/privacy', ensureRepoAccess, async (req, res)
 
 router.post('/:owner/:repo/settings/delete', ensureRepoAccess, async (req, res) => {
     const { owner, repo } = req.params;
-    if (!req.session.user || req.session.user.username !== owner) return res.status(403).send('Forbidden');
+    const { repoData } = req;
+    if (!(await isRepoOwner(req, repoData))) return res.status(403).send('Forbidden');
     
     await db.repos.delete(`${owner}_${repo}`);
     const repoPath = path.join(__dirname, '..', 'repos', owner, repo + '.git');
@@ -372,6 +382,57 @@ router.post('/:owner/:repo/settings/delete', ensureRepoAccess, async (req, res) 
         fs.rmSync(repoPath, { recursive: true, force: true });
     }
     res.redirect('/');
+});
+
+router.post('/:owner/:repo/settings/transfer', ensureRepoAccess, async (req, res) => {
+    const { owner, repo } = req.params;
+    const { repoData } = req;
+    if (!(await isRepoOwner(req, repoData))) return res.status(403).send('Forbidden');
+    
+    const { newOwner, captcha } = req.body;
+    
+    if (!captcha || captcha.toLowerCase() !== req.session.captcha) {
+        return res.redirect(`/${owner}/${repo}/settings?error=Invalid captcha`);
+    }
+    delete req.session.captcha;
+    
+    if (newOwner === owner) {
+        return res.redirect(`/${owner}/${repo}/settings?error=Cannot transfer to the same owner`);
+    }
+    
+    const userExists = await db.users.get(newOwner);
+    const orgExists = await db.orgs.get(newOwner);
+    
+    if (!userExists && !orgExists) {
+        return res.redirect(`/${owner}/${repo}/settings?error=User or Organization not found`);
+    }
+    
+    // If transferring to an org, verify the current user owns that org
+    if (orgExists && orgExists.owner !== req.session.user.username) {
+        return res.redirect(`/${owner}/${repo}/settings?error=You can only transfer to organizations you own`);
+    }
+    
+    const existingRepo = await db.repos.get(`${newOwner}_${repo}`);
+    if (existingRepo) {
+        return res.redirect(`/${owner}/${repo}/settings?error=Target owner already has a repository with this name`);
+    }
+    
+    // DB Migration
+    await db.repos.delete(`${owner}_${repo}`);
+    repoData.owner = newOwner;
+    await db.repos.set(`${newOwner}_${repo}`, repoData);
+    
+    // FS Migration
+    const targetDir = path.join(__dirname, '..', 'repos', newOwner);
+    fs.mkdirSync(targetDir, { recursive: true });
+    
+    const oldPath = path.join(__dirname, '..', 'repos', owner, repo + '.git');
+    const newPath = path.join(targetDir, repo + '.git');
+    if (fs.existsSync(oldPath)) {
+        fs.renameSync(oldPath, newPath);
+    }
+    
+    res.redirect(`/${newOwner}/${repo}`);
 });
 
 // PR Routes

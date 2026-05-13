@@ -5,17 +5,24 @@ A professional-grade, self-hosted Git frontend built with Node.js. NodeGit provi
 ## ✨ Features
 
 - **Git Hosting**: Create and manage bare Git repositories on your own server.
+- **Organizations**: Create organizations to group repositories under a shared namespace. Organization names are protected against user namespace collisions. Creation is CAPTCHA-protected to prevent bot abuse.
+- **Repository Transfer**: Securely transfer repositories between your personal account and your organizations (or to other users) with CAPTCHA verification. Validates that destination accounts exist and prevents naming collisions.
+- **Forking**: Fork any public repository into your own account with a single click, preserving all history and branches.
+- **Private Repositories**: Mark repositories as private to restrict access. Private repos return 404 to unauthorized users to prevent enumeration. Git operations on private repos require Basic Authentication.
 - **Pull Requests**: Full PR workflow including web-based diffing and merging.
+- **User Profiles & Search**: View any user's or organization's public repositories. A global search bar filters repositories, users, and organizations by name.
+- **README Rendering**: Automatically detects and renders `README.md` files on the repository code view.
 - **Security First**:
-  - **CAPTCHA**: Built-in verification for registrations and sign-ins to prevent bot activity.
+  - **CAPTCHA**: Built-in verification for registration, login, organization creation, and repository transfers.
   - **Encryption**: Support for encryption-at-rest for database operations.
   - **HTTPS**: Native support for secure transit.
+  - **Basic Auth**: Git-over-HTTP operations enforce authentication against user credentials for private repositories.
   - **Secret Scanning**: Automatic scanning for sensitive data in your codebase.
   - **Dependency Scanning**: Keep your project safe with automated dependency vulnerability checks.
-- **CI/CD**: Integrated runner for automated job execution (Docker-ready).
+- **CI/CD**: Integrated GitHub Actions–compatible runner for automated job execution (Docker-ready).
 - **Themeable UI**: Beautiful, GitHub-esque light mode and a custom Lime-on-Black dark mode.
 - **Release Management**: Create and view repository tags and releases.
-- **GitHub Import**: Seamlessly import your entire repository collection from GitHub using either a Personal Access Token (for private repos) or just a username/organization name (for public repos). Features real-time progress reporting via streaming JSON and built-in heartbeats to prevent Cloudflare timeouts. Full pagination support ensures that even accounts with hundreds of repositories are imported completely. Built-in rate-limiting ensures we are kind to GitHub's APIs, and tokens are securely used for private repository authentication during the import process.
+- **GitHub Import**: Seamlessly import repository collections from GitHub into your personal account or an organization. Supports Personal Access Tokens (for private repos) or just a username/org name (for public repos). Features real-time streaming progress, rate-limiting, and full pagination. Mirrored repos can be converted to standalone repositories at any time.
 
 ## 🛠️ Tech Stack
 

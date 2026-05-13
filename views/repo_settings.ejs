@@ -1,5 +1,13 @@
 <%- include('header') %>
 
+<div style="max-width: 800px; margin: 0 auto;">
+
+<% if (typeof error !== 'undefined' && error) { %>
+    <div style="background-color: var(--danger-color); color: white; padding: 10px; border-radius: 6px; margin-bottom: 16px;">
+        <%= error %>
+    </div>
+<% } %>
+
 <div class="flex-between" style="align-items: flex-start; margin-bottom: 16px;">
     <div>
         <h2 style="margin-bottom: 4px;">
@@ -33,6 +41,30 @@
     </form>
 </div>
 
+<div class="card" style="margin-bottom: 24px;">
+    <h3>Transfer Ownership</h3>
+    <p class="text-muted" style="margin-bottom: 16px;">
+        Transfer this repository to another user or to an organization you belong to.
+    </p>
+    <form action="/<%= repo.owner %>/<%= repo.name %>/settings/transfer" method="POST">
+        <div class="form-group" style="margin-bottom: 16px;">
+            <label for="newOwner">New Owner</label>
+            <input type="text" id="newOwner" name="newOwner" class="form-control" placeholder="Username or Organization name" required>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 16px;">
+            <label>Verification</label>
+            <div style="margin-bottom: 8px;">
+                <img src="/captcha" alt="CAPTCHA" style="border: 1px solid var(--border-color); border-radius: 4px; display: block; background: #fff;" onclick="this.src='/captcha?'+Math.random()">
+                <small class="text-muted" style="cursor: pointer;" onclick="document.querySelector('img[alt=\\'CAPTCHA\\']').src='/captcha?'+Math.random()">Click image to refresh</small>
+            </div>
+            <input type="text" name="captcha" class="form-control" placeholder="Enter characters above" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="background-color: var(--danger-color); border-color: var(--danger-color);">Transfer Repository</button>
+    </form>
+</div>
+
 <div class="card" style="border-color: var(--danger-color);">
     <h3 style="color: var(--danger-color);">Danger Zone</h3>
     <p class="text-muted" style="margin-bottom: 16px;">
@@ -41,6 +73,8 @@
     <form action="/<%= repo.owner %>/<%= repo.name %>/settings/delete" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete this repository? This action cannot be undone.');">
         <button type="submit" class="btn" style="background-color: var(--danger-color); color: white;">Delete Repository</button>
     </form>
+</div>
+
 </div>
 
 <%- include('footer') %>
